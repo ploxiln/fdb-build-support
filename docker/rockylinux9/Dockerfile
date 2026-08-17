@@ -567,8 +567,14 @@ RUN export DOWNLOAD_DIR="swift-6.1-RELEASE" && \
     # Print Installed Swift Version
     swift --version
 
-# install sphinx
-RUN python3 -m pip install setuptools==65.3.0 sphinx-bootstrap-theme==0.8.1 docutils==0.19 sphinx==5.1.1 sphinx-autobuild Jinja2==3.1.2 urllib3==2.0.2
+# install sphinx (matches foundationdb repo documentation/sphinx/requirements.txt)
+RUN python3 -m pip install            \
+        Sphinx==6.2.1                 \
+        sphinx-bootstrap-theme==0.8.1 \
+        sphinxcontrib-jquery==4.1     \
+        docutils==0.19                \
+        Jinja2==3.1.6                 \
+        "urllib3 <3"
 
 # Install seaweedfs, an ersatz 's3' service, for s3 tests.
 ENV SEAWEEDFS_VERSION=3.80
