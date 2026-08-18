@@ -576,6 +576,11 @@ RUN python3 -m pip install            \
         Jinja2==3.1.6                 \
         "urllib3 <3"
 
+# install pycodestyle and standard "build" tool, for python bindings
+RUN python3 -m pip install \
+        pycodestyle \
+        build
+
 # Install seaweedfs, an ersatz 's3' service, for s3 tests.
 ENV SEAWEEDFS_VERSION=3.80
 RUN if [ "$(uname -m)" == "aarch64" ]; then \
