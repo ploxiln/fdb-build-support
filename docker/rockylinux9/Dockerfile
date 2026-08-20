@@ -13,10 +13,12 @@ RUN sed -i.bak 's/^#baseurl=/baseurl=/; s/^mirrorlist=/#mirrorlist=/' /etc/yum.r
         autoconf \
         automake \
         binutils-devel \
+        cmake \
         curl \
         coreutils-single \
         dos2unix \
         dpkg \
+        git-core \
         gcc-toolset-13-runtime-13.0 \
         gcc-toolset-13-libstdc++-devel-13.3.1 \
         gcc-toolset-13-binutils-gold-2.40 \
@@ -129,20 +131,6 @@ RUN curl -Ls https://github.com/axboe/liburing/archive/refs/tags/liburing-2.1.ta
     cd ../ && \
     rm -rf /tmp/*
 
-# build/install git
-RUN curl -Ls https://github.com/git/git/archive/refs/tags/v2.45.1.tar.gz -o git.tar.gz && \
-    echo "d98c8f70d58f49f7546d59b25e25f2deae6999eb036a33b0fe6f5d07c33f67c6  git.tar.gz" > git-sha.txt && \
-    sha256sum --quiet -c git-sha.txt && \
-    mkdir git && \
-    tar --strip-components 1 --no-same-owner --directory git -xf git.tar.gz && \
-    cd git && \
-    make configure && \
-    ./configure && \
-    make && \
-    make install && \
-    cd ../ && \
-    rm -rf /tmp/*
-
 # build/install ninja
 RUN curl -Ls https://github.com/ninja-build/ninja/archive/refs/tags/v1.10.2.zip -o ninja.zip && \
     echo "4e7b67da70a84084d5147a97fcfb867660eff55cc60a95006c389c4ca311b77d  ninja.zip" > ninja-sha.txt && \
@@ -152,20 +140,6 @@ RUN curl -Ls https://github.com/ninja-build/ninja/archive/refs/tags/v1.10.2.zip 
     python3 ./configure.py --bootstrap && \
     cp ninja /usr/bin && \
     cd ../ && \
-    rm -rf /tmp/*
-
-# install cmake
-RUN if [ "$(uname -m)" == "aarch64" ]; then \
-        CMAKE_SHA256="e0f74862734c2d14ef8ac5a71941691531db0bbebee0a9c20a8e96e8a97390f9"; \
-    else \
-        CMAKE_SHA256="0fcb338b4515044f9ac77543550ac92c314c58f6f95aafcac5cd36aa75db6924"; \
-    fi && \
-    curl -Ls https://github.com/Kitware/CMake/releases/download/v3.31.0/cmake-3.31.0-$(uname -s)-$(uname -m).tar.gz -o cmake.tar.gz && \
-    echo "${CMAKE_SHA256}  cmake.tar.gz" > cmake-sha.txt && \
-    sha256sum --quiet -c cmake-sha.txt && \
-    mkdir cmake && \
-    tar --strip-components 1 --no-same-owner --directory cmake -xf cmake.tar.gz && \
-    cp -r cmake/* /usr/local/ && \
     rm -rf /tmp/*
 
 # build/install LLVM 19.1.5
@@ -246,7 +220,7 @@ RUN GOOGLE_BENCHMARK_INSTALL_DIR_CLANG="/opt/googlebenchmark-f91b6b" && \
     cd /tmp/googlebenchmark-f91b6b && \
     mkdir -p /tmp/googlebenchmark-f91b6b/build-clang && \
     ln -s /usr/bin/python3 /usr/bin/python && \
-	cmake -DCMAKE_BUILD_TYPE=Release \
+    cmake -DCMAKE_BUILD_TYPE=Release \
         -DBENCHMARK_DOWNLOAD_DEPENDENCIES=on \
         -DBENCHMARK_ENABLE_LTO=true \
         -DRUN_HAVE_STD_REGEX=0 \
