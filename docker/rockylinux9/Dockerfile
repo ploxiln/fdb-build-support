@@ -689,10 +689,10 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
 # install fdb client lib for joshua
 ARG FDB_VERSION="7.3.77"
 RUN curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.$(uname -m).so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
-    ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so; \
+    ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so
 
 # install fdb header files for compiling the operator
-RUN if [ "$(uname -m)" == "x86_64" ]; then \
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
         rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
             --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
     else \
@@ -703,7 +703,7 @@ RUN if [ "$(uname -m)" == "x86_64" ]; then \
 WORKDIR /root
 
 # add vscode server
-RUN if [ "$(uname -m)" == "aarch64" ]; then \
+RUN if [ "$(uname -m)" = "aarch64" ]; then \
         VSCODE_ARCH="arm64"; \
     else \
         VSCODE_ARCH="x64"; \
