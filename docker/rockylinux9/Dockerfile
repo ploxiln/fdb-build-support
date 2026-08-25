@@ -687,17 +687,15 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
     rm -rf /tmp/*
 
 # install fdb client lib for joshua
-ARG FDB_VERSION="7.3.77"
-RUN curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.$(uname -m).so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
-    ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so
+ARG FDB_VERSION="7.1.57"
+RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
+        curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.x86_64.so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
+        ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so; \
+    fi
 
 # install fdb header files for compiling the operator
-RUN if [ "$(uname -m)" == "x86_64" ]; then \
-        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
-            --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
-    else \
-        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el9.aarch64.rpm \
-            --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
+RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
+        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
     fi
 
 WORKDIR /root
