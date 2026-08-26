@@ -442,8 +442,9 @@ RUN curl -Ls https://github.com/distcc/distcc/archive/refs/tags/v3.4.tar.gz -o d
     rm -rf /tmp/*
 
 # download old fdb binaries and client lib if not on aarch64
+# skip non-supported old versions up to 6.2.x
 RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        for old_fdb_version in 7.3.43 7.1.57 7.1.41 7.1.33 7.0.0 6.3.25 6.3.18; do \
+        for old_fdb_version in 7.3.77 7.3.43 7.1.69 7.1.41 7.1.23 7.0.0 6.3.25 6.3.18; do \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/bin; \
             curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
