@@ -520,21 +520,25 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
 RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
         for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18 ; do \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/bin; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbmonitor.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version}; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbcli.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version}; \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/lib; \
+            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64   -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version};   \
+            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbmonitor.x86_64  -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version};  \
+            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbcli.x86_64      -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version};      \
             curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.x86_64.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so; \
+            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdb*; \
         done; \
         # for simulation tests and joshua (keep in sync with joshua Dockerfile)
         mkdir -p /app/deploy/global_data/oldBinaries; \
         for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
             ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
         done; \
+        ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
+        # Install header files for compiling the operator
+        FDB_VERSION=7.1.57; \
+        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
+            --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
     fi
+
 
 RUN curl -Ls https://github.com/manticoresoftware/manticoresearch/raw/master/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
 
@@ -661,21 +665,6 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     make install && \
     cd .. && \
     rm -rf /tmp/*
-
-ARG FDB_VERSION="7.1.57"
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        mkdir -p /usr/lib/foundationdb/plugins && \
-        curl -Ls https://fdb-joshua.s3.amazonaws.com/old_tls_library.tgz | \
-            tar --strip-components=1 --no-same-owner --directory /usr/lib/foundationdb/plugins -xz && \
-        ln -sf /usr/lib/foundationdb/plugins/FDBGnuTLS.so /usr/lib/foundationdb/plugins/fdb-libressl-plugin.so && \
-        curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.x86_64.so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
-        ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so; \
-    fi
-
-# Install header files for compling the operator
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
-    fi
 
 # Installing helm https://helm.sh/docs/intro/install for e2e testing with the operator.
 ARG HELM_VERSION="v3.12.0"

@@ -458,7 +458,7 @@ RUN ARCH=$(uname -m); \
             curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.$ARCH   -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version};    \
             curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbmonitor.$ARCH  -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version};   \
             curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbcli.$ARCH      -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version};       \
-            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.$ARCH.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so; \
+            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.$ARCH.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so;  \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdb*; \
     done; \
     if [ "$ARCH" == "x86_64" ]; then \
@@ -469,11 +469,13 @@ RUN ARCH=$(uname -m); \
         done; \
         ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
         # install fdb header files for compiling the operator
+        FDB_VERSION=7.1.57; \
         rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
             --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
     fi; \
     # for restart test
     ln -sv /opt/foundationdb/old/7.3.69/bin/fdbserver-* /opt/foundationdb/old/fdbserver
+
 
 RUN curl -Ls https://github.com/manticoresoftware/manticoresearch/raw/master/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
 
