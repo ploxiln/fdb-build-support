@@ -429,7 +429,7 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     rm -rf /opt/boost_1_78_0_clang/libs && \
     rm -rf /tmp/*
 
-# jemalloc (needed for FDB after 6.3)
+# jemalloc
 RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     curl -Ls https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 -o jemalloc.tar.bz2 && \
     echo "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa  jemalloc.tar.bz2" > jemalloc-sha.txt && \
@@ -440,21 +440,6 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     ./configure --enable-static --disable-cxx --enable-prof && \
     make && \
     make install && \
-    cd .. && \
-    rm -rf /tmp/*
-
-# install jemalloc to /opt/jemalloc_5.3.0 (The FDB build no longer finds the above
-# one for some reason; also installing it system-wide makes it difficult to upgrade
-# the dependency without accidentally upgrading it for older FDB branches.)
-RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
-    curl -Ls https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 -o jemalloc.tar.bz2 && \
-    echo "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa  jemalloc.tar.bz2" > jemalloc-sha.txt && \
-    sha256sum --quiet -c jemalloc-sha.txt && \
-    mkdir -p /opt/jemalloc_5.3.0 && \
-    tar --strip-components 1 --no-same-owner --no-same-permissions --directory /opt/jemalloc_5.3.0 -xjf jemalloc.tar.bz2 && \
-    cd /opt/jemalloc_5.3.0 && \
-    ./configure --enable-static --disable-cxx --enable-prof && \
-    make -j32 && \
     cd .. && \
     rm -rf /tmp/*
 
@@ -531,9 +516,9 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     rm -rf /tmp/*
 
 # download old fdb binaries and client lib if not on aarch64
-# skip non-supported old versions:  6.2.30 6.2.29 6.2.28 6.2.27 6.2.26 6.2.25 6.2.24 6.2.23 6.2.22 6.2.21 6.2.20 6.2.19 6.2.18 6.2.17 6.2.16 6.2.15 6.2.10 6.1.13 6.1.12 6.1.11 6.1.10 6.0.18 6.0.17 6.0.16 6.0.15 6.0.14 5.2.8 5.2.7 5.1.7 5.1.6
+# skip non-supported old versions
 RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        for old_fdb_version in 7.3.43 7.1.57 7.1.23 7.1.19 7.0.0 6.3.23 6.3.22 6.3.18 6.3.17 6.3.16 6.3.15 6.3.13 6.3.12 6.3.9; do \
+        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18 ; do \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/bin; \
             curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
@@ -543,6 +528,11 @@ RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version}; \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/lib; \
             curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.x86_64.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so; \
+        done; \
+        # for simulation tests and joshua (keep in sync with joshua Dockerfile)
+        mkdir -p /app/deploy/global_data/oldBinaries; \
+        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
+            ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
         done; \
     fi
 
@@ -614,21 +604,21 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     # - Download kubectl from AWS
     #   https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
     if [ "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/arm64/kubectl -o kubectl && \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/arm64/kubectl.sha256 -o kubectl.txt; \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/arm64/kubectl -o kubectl && \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/arm64/kubectl.sha256 -o kubectl.txt; \
     else \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl -o kubectl && \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl.sha256 -o kubectl.txt; \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/amd64/kubectl -o kubectl && \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/amd64/kubectl.sha256 -o kubectl.txt; \
     fi && \
     sha256sum --quiet -c kubectl.txt && \
     chmod 755 kubectl && \
     mv kubectl /usr/local/bin/kubectl && \
     if [ "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://github.com/derailed/k9s/releases/download/v0.26.5/k9s_Linux_arm64.tar.gz -o k9s.tar.gz && \
-        echo "62bc8fe98ad035a64bbeede91bdd57de357af3059bd80975a9d22b6b072d97f8  k9s.tar.gz" > k9s-sha.txt; \
+        curl -Ls https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_arm64.tar.gz -o k9s.tar.gz && \
+        echo "b890a7a212a3fc69e6ea4b2a29d59f80ed501a27ad654c819a155cc7c3c6aa8d  k9s.tar.gz" > k9s-sha.txt; \
     else \
-        curl -Ls https://github.com/derailed/k9s/releases/download/v0.26.5/k9s_Linux_x86_64.tar.gz -o k9s.tar.gz && \
-        echo "8ae556d05b4744f7b79cc71549e4096daa9c6b913be88ee43be42ef800137bc3  k9s.tar.gz" > k9s-sha.txt; \
+        curl -Ls https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_amd64.tar.gz -o k9s.tar.gz && \
+        echo "03934727bfbf39b1e61a74d8e045796cda2de14f8ce4c01df27f43d4494021de  k9s.tar.gz" > k9s-sha.txt; \
     fi && \
     sha256sum --quiet -c k9s-sha.txt && \
     tar --no-same-owner --no-same-permissions --directory /usr/local/bin -xzf k9s.tar.gz k9s && \

@@ -443,11 +443,12 @@ RUN curl -Ls https://github.com/distcc/distcc/archive/refs/tags/v3.4.tar.gz -o d
 
 # download old fdb binaries and client lib if not on aarch64
 # skip non-supported old versions
+ARG OLD_FDB_BINARY_DIR=/app/deploy/global_data/oldBinaries/
 RUN ARCH=$(uname -m); \
     if [ "$ARCH" == "x86_64" ]; then \
-        OLD_VERSIONS="7.3.77 7.3.43 7.1.57 7.1.41 7.1.33 7.0.0 6.3.25 6.3.18"; \
+        OLD_VERSIONS="7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18"; \
     elif [ "$ARCH" == "aarch64" ]; then \
-        OLD_VERSIONS="7.3.77 7.3.69"; \
+        OLD_VERSIONS="7.3.69"; \
     else \
         OLD_VERSIONS=""; \
     fi; \
@@ -460,10 +461,19 @@ RUN ARCH=$(uname -m); \
             curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.$ARCH.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so; \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdb*; \
     done; \
-    if [ -n "$OLD_VERSIONS" ]; then \
-        # for restart test
-        ln -sv /opt/foundationdb/old/7.3.77/bin/fdbserver-* /opt/foundationdb/old/fdbserver; \
-    fi
+    if [ "$ARCH" == "x86_64" ]; then \
+        # for simulation tests and joshua (keep in sync with joshua Dockerfile)
+        mkdir -p /app/deploy/global_data/oldBinaries; \
+        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
+            ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
+        done; \
+        ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
+        # install fdb header files for compiling the operator
+        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
+            --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
+    fi; \
+    # for restart test
+    ln -sv /opt/foundationdb/old/7.3.69/bin/fdbserver-* /opt/foundationdb/old/fdbserver
 
 RUN curl -Ls https://github.com/manticoresoftware/manticoresearch/raw/master/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
 
@@ -693,18 +703,6 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
     ./aws/install && \
     cd /tmp && \
     rm -rf /tmp/*
-
-# install fdb client lib for joshua
-ARG FDB_VERSION="7.1.57"
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.x86_64.so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
-        ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so; \
-    fi
-
-# install fdb header files for compiling the operator
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
-    fi
 
 WORKDIR /root
 
