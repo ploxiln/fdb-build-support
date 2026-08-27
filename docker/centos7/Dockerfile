@@ -542,7 +542,7 @@ RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
     fi
 
 
-RUN curl -Ls https://github.com/manticoresoftware/manticoresearch/raw/master/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
+RUN curl -sSLf https://github.com/manticoresoftware/manticoresearch/raw/refs/heads/main/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
 
 RUN echo "Setup sphinx" && \
     source /opt/rh/rh-python38/enable && \
