@@ -537,6 +537,8 @@ RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
         FDB_VERSION=7.1.57; \
         rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
             --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
+        # for restart test
+        ln -sv /opt/foundationdb/old/7.3.69/bin/fdbserver-* /opt/foundationdb/old/fdbserver ; \
     fi
 
 
