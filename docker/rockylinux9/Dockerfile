@@ -19,18 +19,17 @@ RUN sed -i.bak 's/^#baseurl=/baseurl=/; s/^mirrorlist=/#mirrorlist=/' /etc/yum.r
         dos2unix \
         dpkg \
         git-core \
-        gcc-toolset-13-runtime-13.0 \
-        gcc-toolset-13-libstdc++-devel-13.3.1 \
-        gcc-toolset-13-binutils-gold-2.40 \
-        gcc-toolset-13-binutils-2.40\
-        gcc-toolset-13-gcc-13.3.1 \
-        gcc-toolset-13-gcc-c++-13.3.1 \
+        gcc-toolset-13-runtime \
+        gcc-toolset-13-libstdc++-devel \
+        gcc-toolset-13-binutils-gold \
+        gcc-toolset-13-binutils \
+        gcc-toolset-13-gcc \
+        gcc-toolset-13-gcc-c++ \
         gettext-devel \
         gperftools \
         gperftools-devel \
         gperftools-libs \
         ghostscript \
-        gv \
         iptables \
         java-11-openjdk-devel \
         libbsd-devel \
@@ -376,7 +375,7 @@ RUN cd /tmp && \
     rm -rf /opt/boost_1_86_0/libs && \
     rm -rf /tmp/*
 
-# jemalloc (needed for FDB after 6.3)
+# jemalloc
 RUN curl -Ls https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 -o jemalloc.tar.bz2 && \
     echo "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa  jemalloc.tar.bz2" > jemalloc-sha.txt && \
     sha256sum --quiet -c jemalloc-sha.txt && \
@@ -387,20 +386,6 @@ RUN curl -Ls https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemall
     make -j32 && \
     make install && \
     cd ../ && \
-    rm -rf /tmp/*
-
-# install jemalloc to /opt/jemalloc_5.3.0 (The FDB build no longer finds the above
-# one for some reason; also installing it system-wide makes it difficult to upgrade
-# the dependency without accidentally upgrading it for older FDB branches.)
-RUN curl -Ls https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 -o jemalloc.tar.bz2 && \
-    echo "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa  jemalloc.tar.bz2" > jemalloc-sha.txt && \
-    sha256sum --quiet -c jemalloc-sha.txt && \
-    mkdir -p /opt/jemalloc_5.3.0 && \
-    tar --strip-components 1 --no-same-owner --no-same-permissions --directory /opt/jemalloc_5.3.0 -xjf jemalloc.tar.bz2 && \
-    cd /opt/jemalloc_5.3.0 && \
-    ./configure --enable-static --disable-cxx --enable-prof && \
-    make -j32 && \
-    cd ../  && \
     rm -rf /tmp/*
 
 # install msgpack
@@ -457,19 +442,40 @@ RUN curl -Ls https://github.com/distcc/distcc/archive/refs/tags/v3.4.tar.gz -o d
     rm -rf /tmp/*
 
 # download old fdb binaries and client lib if not on aarch64
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        for old_fdb_version in 7.3.43 7.1.57 7.1.41 7.1.33 7.0.0 6.3.25 6.3.18; do \
+# skip non-supported old versions
+ARG OLD_FDB_BINARY_DIR=/app/deploy/global_data/oldBinaries/
+RUN ARCH=$(uname -m); \
+    if [ "$ARCH" == "x86_64" ]; then \
+        OLD_VERSIONS="7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18"; \
+    elif [ "$ARCH" == "aarch64" ]; then \
+        OLD_VERSIONS="7.3.69"; \
+    else \
+        OLD_VERSIONS=""; \
+    fi; \
+    for old_fdb_version in $OLD_VERSIONS ; do \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/bin; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version}; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbmonitor.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version}; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbcli.x86_64 -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version}; \
-            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version}; \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/lib; \
-            curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.x86_64.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so; \
+            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.$ARCH   -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version};    \
+            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbmonitor.$ARCH  -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbmonitor-${old_fdb_version};   \
+            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbcli.$ARCH      -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbcli-${old_fdb_version};       \
+            curl -LsSf https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/libfdb_c.$ARCH.so -o /opt/foundationdb/old/${old_fdb_version}/lib/libfdb_c-${old_fdb_version}.so;  \
+            chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdb*; \
+    done; \
+    if [ "$ARCH" == "x86_64" ]; then \
+        # for simulation tests and joshua (keep in sync with joshua Dockerfile)
+        mkdir -p /app/deploy/global_data/oldBinaries; \
+        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
+            ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
         done; \
-    fi
+        ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
+        # install fdb header files for compiling the operator
+        FDB_VERSION=7.1.57; \
+        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm \
+            --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
+    fi; \
+    # for restart test
+    ln -sv /opt/foundationdb/old/7.3.69/bin/fdbserver-* /opt/foundationdb/old/fdbserver
+
 
 RUN curl -Ls https://github.com/manticoresoftware/manticoresearch/raw/master/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
 
@@ -630,8 +636,7 @@ RUN curl -Ls https://github.com/cgdb/cgdb/archive/refs/tags/v0.8.0.tar.gz -o cgd
     cd ../ && \
     rm -rf /tmp/*
 
-# instal fdb-joshua
-ENV ARTIFACT="client"
+# install fdb-joshua
 RUN pip3 install \
         boto3 \
         lxml \
@@ -642,17 +647,17 @@ RUN pip3 install \
     mkdir fdb-joshua && \
     cd fdb-joshua && \
     git clone https://github.com/FoundationDB/fdb-joshua . && \
-    pip3 install /tmp/fdb-joshua && \
+    ARTIFACT=client pip3 install /tmp/fdb-joshua && \
     cd /tmp && \
     rm -rf /tmp/*
 
 # - Download kubectl from AWS https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
 RUN if [ "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.5/2023-09-14/bin/linux/arm64/kubectl -o kubectl && \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.5/2023-09-14/bin/linux/arm64/kubectl.sha256 -o kubectl.txt; \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/arm64/kubectl -o kubectl && \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/arm64/kubectl.sha256 -o kubectl.txt; \
     else \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.5/2023-09-14/bin/linux/amd64/kubectl -o kubectl && \
-        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.5/2023-09-14/bin/linux/amd64/kubectl.sha256 -o kubectl.txt; \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/amd64/kubectl -o kubectl && \
+        curl -Ls https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.14/2026-08-04/bin/linux/amd64/kubectl.sha256 -o kubectl.txt; \
     fi && \
     sha256sum --quiet -c kubectl.txt && \
     chmod 755 kubectl && \
@@ -676,11 +681,11 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
 
 # install k9s kubernetes client
 RUN if [ "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_arm64.tar.gz -o k9s.tar.gz && \
-        echo "05f7b054b2f41a69f13893ec819a8aca43662a4bad61951e9887a6f92ecbf2d8  k9s.tar.gz" > k9s-sha.txt; \
+        curl -Ls https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_arm64.tar.gz -o k9s.tar.gz && \
+        echo "b890a7a212a3fc69e6ea4b2a29d59f80ed501a27ad654c819a155cc7c3c6aa8d  k9s.tar.gz" > k9s-sha.txt; \
     else \
-        curl -Ls https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_amd64.tar.gz -o k9s.tar.gz && \
-        echo "e507831ebd5f9b8c0380f212669f352c6e34cb760c916b498babae8be83c4392  k9s.tar.gz" > k9s-sha.txt; \
+        curl -Ls https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_amd64.tar.gz -o k9s.tar.gz && \
+        echo "03934727bfbf39b1e61a74d8e045796cda2de14f8ce4c01df27f43d4494021de  k9s.tar.gz" > k9s-sha.txt; \
     fi && \
     sha256sum --quiet -c k9s-sha.txt && \
     tar --no-same-owner --no-same-permissions --directory /usr/local/bin -xzf k9s.tar.gz k9s && \
@@ -700,18 +705,6 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
     ./aws/install && \
     cd /tmp && \
     rm -rf /tmp/*
-
-# install fdb client lib for joshua
-ARG FDB_VERSION="7.1.57"
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/libfdb_c.x86_64.so -o /usr/lib64/libfdb_c_${FDB_VERSION}.so && \
-        ln -sf /usr/lib64/libfdb_c_${FDB_VERSION}.so /usr/lib64/libfdb_c.so; \
-    fi
-
-# install fdb header files for compiling the operator
-RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        rpm -ivh https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients-${FDB_VERSION}-1.el7.x86_64.rpm --excludepath=/etc/foundationdb --excludepath=/usr/bin --excludepath=/usr/lib --excludepath=/usr/lib64; \
-    fi
 
 WORKDIR /root
 
