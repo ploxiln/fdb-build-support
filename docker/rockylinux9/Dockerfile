@@ -477,7 +477,8 @@ RUN ARCH=$(uname -m); \
     ln -sv /opt/foundationdb/old/7.3.69/bin/fdbserver-* /opt/foundationdb/old/fdbserver
 
 
-RUN curl -sSLf https://github.com/manticoresoftware/manticoresearch/raw/refs/heads/main/misc/junit/ctest2junit.xsl -o /opt/ctest2junit.xsl
+RUN curl -sSLf https://github.com/manticoresoftware/manticoresearch/raw/refs/tags/release-28.6.6/misc/junit/ctest2junit.xsl \
+         -o /opt/ctest2junit.xsl
 
 # Add repro.sh script for generating test reproduction commands
 COPY repro.sh /usr/local/bin/repro.sh
