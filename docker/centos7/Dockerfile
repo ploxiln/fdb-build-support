@@ -259,27 +259,17 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     rm -rf /tmp/*
 
 # install golang 1.22
+ENV GO_VERSION="1.22.12"
 RUN if [ "$(uname -m)" == "aarch64" ]; then \
-        GOLANG_ARCH="arm64"; \
-        GOLANG_SHA256="36e720b2d564980c162a48c7e97da2e407dfcc4239e1e58d98082dfa2486a0c1"; \
+        curl -sfSL https://golang.org/dl/go${GO_VERSION}.linux-arm64.tar.gz -o golang.tar.gz; \
     else \
-        GOLANG_ARCH="amd64"; \
-        GOLANG_SHA256="5901c52b7a78002aeff14a21f93e0f064f74ce1360fce51c6ee68cd471216a17"; \
+        curl -sfSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o golang.tar.gz; \
     fi && \
-    curl -Ls https://golang.org/dl/go1.22.2.linux-${GOLANG_ARCH}.tar.gz -o golang.tar.gz && \
-    echo "${GOLANG_SHA256}  golang.tar.gz" > golang-sha.txt && \
-    sha256sum --quiet -c golang-sha.txt && \
     tar --directory /usr/local -xf golang.tar.gz && \
-    echo '[ -x /usr/local/go/bin/go ] && export GOROOT=/usr/local/go && export GOPATH=$HOME/go && export PATH=$GOPATH/bin:$GOROOT/bin:$PATH' >> /etc/profile.d/golang.sh && \
+    echo '[ -x /usr/local/go/bin/go ] && export GOROOT=/usr/local/go && export GOPATH=$HOME/go && export PATH=$GOPATH/bin:$GOROOT/bin:$PATH' > /etc/profile.d/golang.sh && \
     source /etc/profile.d/golang.sh && \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.7 && \
-    go install golang.org/x/tools/cmd/goimports@latest && \
-    go install github.com/segmentio/golines@latest && \
-    go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 && \
-    go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.2 && \
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2 && \
-    go install github.com/goreleaser/goreleaser@v1.20.0 && \
-    go install sigs.k8s.io/kind@v0.17.0 && \
+    go env -w GOPROXY=https://proxy.golang.org,direct && \
+    go env -w GOSUMDB=sum.golang.org && \
     rm -rf /tmp/*
 
 # build/install googlebenchmark
