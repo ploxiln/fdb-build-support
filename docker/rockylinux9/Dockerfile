@@ -185,18 +185,19 @@ RUN curl -Ls https://www.openssl.org/source/openssl-1.1.1m.tar.gz -o openssl.tar
     cd ../ && \
     rm -rf /tmp/*
 
-ENV GO_VERSION="1.25.7"
 # Install golang
+ENV GO_VERSION="1.25.14"
 RUN if [ "$(uname -m)" == "aarch64" ]; then \
-        curl -Ls "https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz" -o golang.tar.gz; \
+        curl -sfSL "https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz" -o golang.tar.gz; \
     else \
-        curl -Ls "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o golang.tar.gz; \
+        curl -sfSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o golang.tar.gz; \
     fi \
     && tar -C /usr/local -xzf golang.tar.gz && \
-    echo '[ -x /usr/local/go/bin/go ] && export PATH=/usr/local/go/bin:$PATH' >> /etc/profile.d/golang.sh && \
+    echo '[ -x /usr/local/go/bin/go ] && export PATH=/usr/local/go/bin:$PATH' > /etc/profile.d/golang.sh && \
     source /etc/profile.d/golang.sh && \
     go env -w GOPROXY=https://proxy.golang.org,direct && \
-    go env -w GOSUMDB=sum.golang.org
+    go env -w GOSUMDB=sum.golang.org && \
+    rm -rf /tmp/*
 
 # build/install googlebenchmark
 # If you change this, then old versions of FDB will stop building in the resulting image.  If you need to support old and
