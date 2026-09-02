@@ -1,4 +1,4 @@
-FROM centos:7 as build
+FROM centos:7 AS build
 
 ARG DEVTOOLSET_VERSION=11
 
@@ -554,7 +554,7 @@ RUN if [ "$(uname -m)" == "aarch64" ]; then \
     rm -rf /tmp/*
 
 # =========================== END OF LAYER: build ==============================
-FROM build as devel
+FROM build AS devel
 
 ARG DEVTOOLSET_VERSION=11
 
@@ -588,7 +588,7 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     source /opt/rh/rh-python38/enable && \
     pip3 install \
         boto3 \
-        lxml \
+        lxml==6.1.2 \
         psutil \
         python-dateutil \
         subprocess32 \
@@ -788,7 +788,7 @@ RUN rm -f /root/anaconda-ks.cfg && \
     >> .bashrc
 
 # =========================== END OF LAYER: devel ==============================
-FROM build as distcc
+FROM build AS distcc
 
 ARG DEVTOOLSET_VERSION=11
 
@@ -814,7 +814,7 @@ ENTRYPOINT distccd \
            --jobs `nproc`
 
 # =========================== END OF LAYER: distcc =============================
-FROM devel as codebuild
+FROM devel AS codebuild
 
 COPY dockerd-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["dockerd-entrypoint.sh"]
