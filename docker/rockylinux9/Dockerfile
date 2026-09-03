@@ -442,14 +442,16 @@ RUN curl -Ls https://github.com/distcc/distcc/archive/refs/tags/v3.4.tar.gz -o d
     cd ../ && \
     rm -rf /tmp/*
 
-# download old fdb binaries and client lib if not on aarch64
+# download old fdb binaries and client lib
 # skip non-supported old versions
 ARG OLD_FDB_BINARY_DIR=/app/deploy/global_data/oldBinaries/
-RUN ARCH=$(uname -m); \
+ENV FDB_EXTERNAL_CLIENT_DIR=/opt/foundationdb/lib
+RUN set -eu; \
+    ARCH=$(uname -m); \
     if [ "$ARCH" == "x86_64" ]; then \
-        OLD_VERSIONS="7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18"; \
+        OLD_VERSIONS="7.4.7 7.3.77 7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18"; \
     elif [ "$ARCH" == "aarch64" ]; then \
-        OLD_VERSIONS="7.3.69"; \
+        OLD_VERSIONS="7.4.7 7.3.77 7.3.69"; \
     else \
         OLD_VERSIONS=""; \
     fi; \
@@ -464,9 +466,13 @@ RUN ARCH=$(uname -m); \
     done; \
     if [ "$ARCH" == "x86_64" ]; then \
         # for simulation tests and joshua (keep in sync with joshua Dockerfile)
-        mkdir -p /app/deploy/global_data/oldBinaries; \
-        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
-            ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
+        mkdir -p ${OLD_FDB_BINARY_DIR}; \
+        mkdir -p ${FDB_EXTERNAL_CLIENT_DIR}; \
+        for version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
+            ln -sv /opt/foundationdb/old/${version}/bin/fdbserver-* ${OLD_FDB_BINARY_DIR}/; \
+        done; \
+        for version in 7.4.7 7.3.77 7.1.57; do \
+            ln -sv /opt/foundationdb/old/${version}/lib/libfdb_c-* ${FDB_EXTERNAL_CLIENT_DIR}/; \
         done; \
         ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
         # install fdb header files for compiling the operator
@@ -779,7 +785,7 @@ RUN rm -f /root/anaconda-ks.cfg && \
     '    cd ${HOME}/build_output && ctest -j 32 --no-compress-output -T test --output-on-failure 2>&1 | tee ${HOME}/ctest.log' \
     '}' \
     'function j() {' \
-    '   python3 -m joshua.joshua "${@}"' \
+    '   FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY=${FDB_EXTERNAL_CLIENT_DIR} python3 -m joshua.joshua "${@}"' \
     '}' \
     'function jsd() {' \
     '   j start --tarball $(find ${HOME}/build_output/packages -name correctness\*.tar.gz) "${@}"' \
