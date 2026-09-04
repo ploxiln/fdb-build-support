@@ -505,10 +505,13 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
     cd .. && \
     rm -rf /tmp/*
 
-# download old fdb binaries and client lib if not on aarch64
+# download old fdb binaries and client lib
 # skip non-supported old versions
+ARG OLD_FDB_BINARY_DIR=/app/deploy/global_data/oldBinaries/
+ENV FDB_EXTERNAL_CLIENT_DIR=/opt/foundationdb/lib
 RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
-        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18 ; do \
+        set -eu; \
+        for old_fdb_version in 7.4.7 7.3.77 7.3.69 7.3.43 7.1.61 7.1.57 7.1.19 6.3.18 ; do \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/bin; \
             mkdir -p /opt/foundationdb/old/${old_fdb_version}/lib; \
             curl -Ls https://github.com/apple/foundationdb/releases/download/${old_fdb_version}/fdbserver.x86_64   -o /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-${old_fdb_version};   \
@@ -518,9 +521,13 @@ RUN if [ ! "$(uname -m)" == "aarch64" ]; then \
             chmod +x /opt/foundationdb/old/${old_fdb_version}/bin/fdb*; \
         done; \
         # for simulation tests and joshua (keep in sync with joshua Dockerfile)
-        mkdir -p /app/deploy/global_data/oldBinaries; \
-        for old_fdb_version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
-            ln -sv /opt/foundationdb/old/${old_fdb_version}/bin/fdbserver-* /app/deploy/global_data/oldBinaries/; \
+        mkdir -p ${OLD_FDB_BINARY_DIR}; \
+        mkdir -p ${FDB_EXTERNAL_CLIENT_DIR}; \
+        for version in 7.3.69 7.3.43 7.1.61 7.1.19 6.3.18; do \
+            ln -sv /opt/foundationdb/old/${version}/bin/fdbserver-* ${OLD_FDB_BINARY_DIR}/; \
+        done; \
+        for version in 7.4.7 7.3.77 7.1.57; do \
+            ln -sv /opt/foundationdb/old/${version}/lib/libfdb_c-* ${FDB_EXTERNAL_CLIENT_DIR}/; \
         done; \
         ln -sv /opt/foundationdb/old/7.1.57/lib/libfdb_c-*.so /usr/lib64/libfdb_c.so; \
         # Install header files for compiling the operator
@@ -742,7 +749,7 @@ RUN rm -f /root/anaconda-ks.cfg && \
     '    cd ${HOME}/build_output && ctest -j 32 --no-compress-output -T test --output-on-failure 2>&1 | tee ${HOME}/ctest.log' \
     '}' \
     'function j() {' \
-    '   python3 -m joshua.joshua "${@}"' \
+    '   FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY=${FDB_EXTERNAL_CLIENT_DIR} python3 -m joshua.joshua "${@}"' \
     '}' \
     'function jsd() {' \
     '   j start --tarball $(find ${HOME}/build_output/packages -name correctness\*.tar.gz) "${@}"' \
