@@ -448,8 +448,8 @@ RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
 
 # Install CCACHE
 RUN source /opt/rh/devtoolset-${DEVTOOLSET_VERSION}/enable && \
-    curl -Ls https://github.com/ccache/ccache/releases/download/v4.0/ccache-4.0.tar.gz -o ccache.tar.gz && \
-    echo "ac97af86679028ebc8555c99318352588ff50f515fc3a7f8ed21a8ad367e3d45  ccache.tar.gz" > ccache-sha256.txt && \
+    curl -Ls https://github.com/ccache/ccache/releases/download/v4.8.3/ccache-4.8.3.tar.gz -o ccache.tar.gz && \
+    echo "d59dd569ad2bbc826c0bc335c8ebd73e78ed0f2f40ba6b30069347e63585d9ef  ccache.tar.gz" > ccache-sha256.txt && \
     sha256sum --quiet -c ccache-sha256.txt && \
     mkdir ccache &&\
     tar --strip-components 1 --no-same-owner --directory ccache -xf ccache.tar.gz && \
